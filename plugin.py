@@ -6,11 +6,17 @@
 	tick called
 '''
 class Plugin:
-	def __init__(self, name, author, description, version):
+	def __init__(self, name, author, description, version, gplugins):
 		self.info_name = name
 		self.info_author = author
 		self.info_description = description
 		self.info_version = version
+		self.gplugins = gplugins
 		return
 	def initFormal(self):
 		return
+	def getPlugin(self, name):
+		for plugin in self.gplugins:
+			if plugin.info_name == name:
+				return plugin
+		return None

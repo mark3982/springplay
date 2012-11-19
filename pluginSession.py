@@ -13,9 +13,10 @@ class pluginSession(plugin.Plugin):
 	'''
 	rotiter = 0.0
 	lobbyLoginGoodOrBad = 0
-
-	def __init__(self, name, author, description, version):
-		plugin.Plugin.__init__(self, name, author, description, version)
+	lobbyCbs = []
+	
+	def __init__(self, name, author, description, version, gplugins):
+		plugin.Plugin.__init__(self, name, author, description, version, gplugins)
 		self.mm = mapManager.mapManager()
 		self.mm_names = self.mm.getMapNames() 
 		random.seed(time.time())
@@ -31,6 +32,9 @@ class pluginSession(plugin.Plugin):
 		self.rotiter = self.rotiter + 0.01
 		session.Update(self.lobby, self.lobbyCb)
 
+	def registerCb(self, obj, _cb):
+		self.lobbyCbs.append((obj, _cb))
+		
 	def lobbyCb(self, session, event, args):
 		if event == 'accepted':
 			self.qLabelMsg.setText('passed')
@@ -38,6 +42,9 @@ class pluginSession(plugin.Plugin):
 		if event == 'denied':
 			self.lobbyLoginGoodOrBad = 2
 			self.qLabelMsg.setText('failed')
+		
+		for cb in self.lobbyCbs:
+			cb[1](cb[0], session, event, args)
 
 	def paintHook(self, QPaintEvent):
 		shade = 0.2

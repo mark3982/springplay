@@ -5,6 +5,8 @@ import struct
 import native
 from ctypes import *
 from PyQt4 import QtGui
+import storage
+import zipfile
 
 '''
 	Handles enumerating all the maps on the system. Need to change it
@@ -13,17 +15,14 @@ from PyQt4 import QtGui
 	the correct map directory or directories.
 '''
 class mapManager:
-	def __init__(self):
-		if os.path.exists('mmcache.index'):
-			fd = open('mmcache.index', 'r')
-			self.cachendx = eval(fd.read())
-			fd.close()
-		else:
-			self.cachendx = {}
+	def __init__(self, useHTTPForMaps):
 		self.refresh()
+		self.useHTTPForMaps = useHTTPForMaps
 
+	'''
+		* need more configuration here.. still need to flush this out
+	'''
 	def refresh(self):
-		print(sys.platform)
 		if sys.platform == 'win32':
 			self.mapdir = '%s\\My Documents\\My Games\\Spring\\maps\\' % (os.environ['USERPROFILE'])
 		else:
@@ -178,7 +177,7 @@ class mapManager:
 			out = create_string_buffer(w * h * 2)
 			native.native['DXT1_decode'](c_char_p(data), c_uint(len(data)), c_uint(w), c_uint(h), out)
 			qimg = QtGui.QImage(out, 1024, 1024, QtGui.QImage.Format_RGB16)
-			return qimg
+			return qimg, out
 			
 
 		qimg = QtGui.QImage(1024, 1024, QtGui.QImage.Format_RGB16)
@@ -268,13 +267,17 @@ class mapManager:
 		# the fixed compression from the DXT1 format (1:8)
 		# 1024x1024x4 becomes 256x256x8 which is 8/1
 		miniMapData = data[miniPtr:miniPtr + int((1024*1024*4)/8)]
-		qimg = self.decodeDXT1(miniMapData, 1024, 1024)
-		return qimg	
+		qimg, qimgraw = self.decodeDXT1(miniMapData, 1024, 1024)
+		return qimg, qimgraw	
 
 	def getMiniMap(self, name):
-		if name in self.qimg_cache:
-			return self.qimg_cache[name]
+		storkey = 'mapManager.minimap.%s' % name
+		if storage.exist(storkey):
+			qimg = QtGui.QImage(storage.read(storkey), 1024, 1024, QtGui.QImage.Format_RGB16)
+			return qimg
+		# okay look and see if we have the map file locally
 		if name not in self.maps:
+			print('getMiniMap-name-not-found', name)
 			return None
 		dstdir = os.path.abspath('.\\7ztmp')
 		archive = '%s%s' % (self.mapdir, name)
@@ -293,7 +296,6 @@ class mapManager:
 					continue
 				data = zf.read(node)
 				node = node.replace('/', '_').replace('\\', '_')
-				print(node)
 				fd = open('%s\\%s' % (dstdir, node), 'wb')
 				fd.write(data)
 				fd.close()
@@ -312,11 +314,12 @@ class mapManager:
 			if ext == '.smd':
 				pass	
 			if ext == '.smf':
-				qimg = self.readSMF('%s\\%s' % (dstdir, node))
-				self.qimg_cache[name] = qimg
+				qimg, qimgraw = self.readSMF('%s\\%s' % (dstdir, node))
+				storage.write('mapManager.minimap.%s' % name, qimgraw, useDisk = True)
 				return qimg
 			if ext == '.smt':
 				pass
+		print('game archive did not contain SMF file!')
 		self.rmdir('%s' % dstdir)
 		return None
 	

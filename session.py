@@ -191,7 +191,7 @@ def Update(session, cb):
 			b_u3 = parts[4]
 			b_map = parts[5]
 			session['battles'][b_id]['map'] = b_map
-			cb(session, 'updatebattleinfo', (b_id,))
+			cb(session, 'updatebattleinfo', (b_id, b_u1, b_u2, b_u3, b_map))
 			continue
 		if parts[0] == 'JOINEDBATTLE':
 			b_id = parts[1]

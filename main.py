@@ -22,6 +22,7 @@ import math
 import pluginSession
 import pluginChat
 import pluginMaps
+import pluginBattles
 
 VERSION = 'SpringPlay-%s-A' % (version.getVersionString())
 print(VERSION)
@@ -29,7 +30,7 @@ print(VERSION)
 gPlugins = []
 def regPlugin(plugin):
 	gPlugins.append(plugin)	
-
+	
 '''
 	* register the plugins
 	* create the user interface
@@ -40,17 +41,26 @@ def regPlugin(plugin):
 regPlugin(pluginSession.pluginSession(
 	'Session', 'Leonard Kevin McGuire Jr', 
 	'Manages network connection to the lobby server.',
-	'builtin-%s' % (VERSION)
+	'builtin-%s' % (VERSION),
+	gPlugins
 ))
 regPlugin(pluginChat.pluginChat(
 	'Chat', 'Leonard Kevin McGuire Jr',
 	'Manages chat channels.',
-	'builtin-%s' % (VERSION)
+	'builtin-%s' % (VERSION),
+	gPlugins
+))
+regPlugin(pluginBattles.pluginBattles(
+	'Battles', 'Leonard Kevin McGuire Jr',
+	'Management Of Battles',
+	'builtin-%s' % (VERSION),
+	gPlugins
 ))
 regPlugin(pluginMaps.pluginMaps(
 	'Maps', 'Leonard Kevin McGuire Jr',
 	'Management of maps',
-	'builtin-%s' % (VERSION)
+	'builtin-%s' % (VERSION),
+	gPlugins
 ))
 
 
