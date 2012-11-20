@@ -42,24 +42,28 @@ regPlugin(PluginSession.PluginSession(
 	'Session', 'Leonard Kevin McGuire Jr', 
 	'Manages network connection to the lobby server.',
 	'builtin-%s' % (VERSION),
+	'Login',
 	gPlugins
 ))
 regPlugin(PluginChat.PluginChat(
 	'Chat', 'Leonard Kevin McGuire Jr',
 	'Manages chat channels.',
 	'builtin-%s' % (VERSION),
+	'Chat Rooms',
 	gPlugins
 ))
 regPlugin(PluginBattles.PluginBattles(
 	'Battles', 'Leonard Kevin McGuire Jr',
 	'Management Of Battles',
 	'builtin-%s' % (VERSION),
+	'Battles',
 	gPlugins
 ))
 regPlugin(PluginMaps.PluginMaps(
 	'Maps', 'Leonard Kevin McGuire Jr',
 	'Management of maps',
 	'builtin-%s' % (VERSION),
+	'Maps',
 	gPlugins
 ))
 
@@ -93,7 +97,18 @@ class MainWindow(QtGui.QWidget):
 	
 		self.formalized = False
 
+		# app-icon = 	blade-bite.png
+		# battle = all-for-one.png
+		# 			current battle = animal-skull.png
+		#           all battles = crossed-swords.png
+		# session = anatomy.png / auto-repair.png
+		icon = QtGui.QIcon(r'.\images\blade-bite.png')
+		self.setWindowIcon(icon)
+		
+		font = QtGui.QFont('Monospace', 12)
+		
 		self.wTreeView = QtGui.QTreeWidget(self)
+		self.wTreeView.setHeaderHidden(True)
 		self.wTreeView.show()
 		self.activePlug = None
 		QtCore.QObject.connect(self.wTreeView, QtCore.SIGNAL('itemSelectionChanged()'), self.treeViewSelectionChanged)
@@ -103,7 +118,8 @@ class MainWindow(QtGui.QWidget):
 			plug.pParent = self			# plugin parent
 			plug.wParent = pWidget			# widget parent
 			plug.__tvnode = QtGui.QTreeWidgetItem()
-			plug.__tvnode.setText(0, plug.info_name)
+			plug.__tvnode.setFont(0, font)
+			plug.__tvnode.setText(0, plug.menuText)
 			plug.__tvnodes = [plug.__tvnode]
 			plug.__tvhandler = []
 			plug.initFormal()
@@ -138,6 +154,15 @@ class MainWindow(QtGui.QWidget):
 	'''
 	def treeViewSelectionChanged(self):
 		sitem = self.wTreeView.selectedItems()[0]
+		
+		# this will transverse down onto the root node
+		# and thus allow us to determine what plugin this
+		# sub-node belongs to and of course to display the
+		# plugin panel
+		parent = True
+		while sitem.parent() is not None:
+			sitem = sitem.parent()
+		
 		for plug in gPlugins:
 			# lets the plugin register a handler for
 			# a specific item in the treeview normally it

@@ -4,6 +4,7 @@ import socket
 import hashlib
 import base64
 import asyncore
+import traceback
 
 LOG_PACKET = 200
 LOG_HEAVY = 100
@@ -42,6 +43,12 @@ def Create(nick, passw, server = 'lobby.springrts.com', port = 8200, loghdlr = N
 	}
 	return session
 
+def wrapCb(cb, session, event, args):
+	try:
+		cb(session, event, args)
+	except Exception as e:
+		traceback.print_exc()
+	
 def Update(session, cb):
 	sock = session['socket']
 	try:
@@ -107,7 +114,7 @@ def Update(session, cb):
 				'status':	None,
 				'online':	True,
 			}
-			cb(session, 'adduser', (parts[1],))
+			wrapCb(cb, session, 'adduser', (parts[1],))
 			continue
 		if parts[0] == 'CLIENTS':
 			b_channel = parts[1]
@@ -115,46 +122,46 @@ def Update(session, cb):
 				session['throwbk'].append(seg)
 				continue
 			session['channels'][parts[1]]['clients'] = parts[2:]
-			cb(session, 'clients', (parts[1], parts[2:]))
+			wrapCb(cb, session, 'clients', (parts[1], parts[2:]))
 			continue
 		if parts[0] == 'JOIN':
 			print('JOIN', parts[1])
 			session['channels'][parts[1]] = {
 				'clients':		[]
 			}
-			cb(session, 'join', (parts[1],))
+			wrapCb(cb, session, 'join', (parts[1],))
 			continue
 		if parts[0] == 'JOINED':
 			b_channel = parts[1]
 			b_nick = parts[2]
 			session['channels'][b_channel]['clients'].append(b_nick)
-			cb(session, 'joined', (b_channel, b_nick))
+			wrapCb(cb, session, 'joined', (b_channel, b_nick))
 			continue
 		if parts[0] == 'LEFT':
 			b_channel = parts[1]
 			b_nick = parts[2]
 			b_msg = ' '.join(parts[3:])
 			session['channels'][b_channel]['clients'].remove(b_nick)
-			cb(session, 'left', (b_channel, b_nick, b_msg))
+			wrapCb(cb, session, 'left', (b_channel, b_nick, b_msg))
 			continue
 		if parts[0] == 'SAID':
 			b_channel = parts[1]
 			b_nick = parts[2]
 			b_msg = seg[4 + len(parts[1]) + 1 + len(parts[2]) + 1:]
 			#session['channels'][b_channel]['log'].append((b_nick, b_msg))
-			cb(session, 'said', (b_channel, b_nick, b_msg))
+			wrapCb(cb, session, 'said', (b_channel, b_nick, b_msg))
 			continue
 		if parts[0] == 'ACCEPTED':
 			loghdlr(session, LOG_LIGHT, 'lobby accepted our connection')
-			cb(session, 'accepted', None)
+			wrapCb(cb, session, 'accepted', None)
 			continue
 		if parts[0] == 'DENIED':
 			loghdlr(session, LOG_PACKET, 'lobby denied our connection (%s)' % seg[7:])
-			cb(session, 'denied', (seg[7:],))
+			wrapCb(cb, session, 'denied', (seg[7:],))
 			continue
 		if parts[0] == 'MOTD':
 			loghdlr(session, LOG_PACKET, 'lobby-motd %s' % seg[5:])
-			cb(session, 'motd', (seg[5:],))
+			wrapCb(cb, session, 'motd', (seg[5:],))
 			continue
 		if parts[0] == 'BATTLEOPENED':
 			b_id = parts[1]
@@ -179,7 +186,7 @@ def Update(session, cb):
 				'mod': 		b_mod,
 				'users':	[],
 			}
-			cb(session, 'battleopened', (b_id,))
+			wrapCb(cb, session, 'battleopened', (b_id,))
 			continue
 		if parts[0] == 'BATTLECLOSED':
 			# need to change
@@ -193,7 +200,7 @@ def Update(session, cb):
 			b_u3 = parts[4]
 			b_map = parts[5]
 			session['battles'][b_id]['map'] = b_map
-			cb(session, 'updatebattleinfo', (b_id, b_u1, b_u2, b_u3, b_map))
+			wrapCb(cb, session, 'updatebattleinfo', (b_id, b_u1, b_u2, b_u3, b_map))
 			continue
 		if parts[0] == 'JOINEDBATTLE':
 			b_id = parts[1]
@@ -206,7 +213,7 @@ def Update(session, cb):
 				continue
 			session['users'][b_nick]['battle'] = b_id
 			session['battles'][b_id]['users'].append(b_nick)
-			cb(session, 'joinedbattle', (b_nick, b_id))
+			wrapCb(cb, session, 'joinedbattle', (b_nick, b_id))
 			continue
 		if parts[0] == 'CLIENTSTATUS':
 			b_nick = parts[1]
@@ -215,7 +222,7 @@ def Update(session, cb):
 				session['throwbk'].append(seg)
 				continue
 			session['users'][b_nick]['status'] = int(b_status)
-			cb(session, 'clientstatus', (b_nick, b_status))
+			wrapCb(cb, session, 'clientstatus', (b_nick, b_status))
 			continue
 		if parts[0] == 'LOGININFOEND':
 			#JoinChannel(session, 'en')
@@ -230,7 +237,7 @@ def Update(session, cb):
 				session['throwbk'].append(seg)
 				continue
 			session['battles'][b_id]['users'].remove(b_nick)
-			cb(session, 'leftbattle', (b_nick, b_id))
+			wrapCb(cb, session, 'leftbattle', (b_nick, b_id))
 			continue
 		if parts[0] == 'REMOVEUSER':
 			b_nick = parts[1]
@@ -238,7 +245,7 @@ def Update(session, cb):
 				session['throwbk'].append(seg)
 				continue
 			session['users'][b_nick]['online'] = False
-			cb(session, 'removeuser', (b_nick,))
+			wrapCb(cb, session, 'removeuser', (b_nick,))
 			continue
 		if parts[0] == 'CHANNELTOPIC':
 			channel = parts[1]
@@ -246,8 +253,13 @@ def Update(session, cb):
 			flags = int(parts[3])
 			offset = len(parts[0]) + 1 + len(parts[1]) + 1 + len(parts[2]) + 1 + len(parts[3]) + 1
 			message = seg[offset:]
-			cb(session, 'VOICE', (channel, whom, flags, message))
+			wrapCb(cb, session, 'VOICE', (channel, whom, flags, message))
 			continue 
+		if parts[0] == 'SAIDBATTLE':
+			whom = parts[1]
+			message = seg[len(parts[0]) + 1 + len(parts[1]) + 1:]
+			wrapCb(cb, session, 'SAIDBATTLE', (whom, message))
+			continue
 			
 		print('------UNKNOWN NETWORK MESSAGE------')
 		print(parts)

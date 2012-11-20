@@ -4,6 +4,7 @@ import random
 import time
 import math
 import Session
+import os.path
 from PyQt4 import QtCore
 from PyQt4 import QtGui
 
@@ -15,8 +16,8 @@ class PluginSession(Plugin.Plugin):
 	lobbyLoginGoodOrBad = 0
 	lobbyCbs = []
 	
-	def __init__(self, name, author, description, version, gplugins):
-		Plugin.Plugin.__init__(self, name, author, description, version, gplugins)
+	def __init__(self, name, author, description, version, menuText, gplugins):
+		Plugin.Plugin.__init__(self, name, author, description, version, menuText, gplugins)
 		self.mm = MapManager.getMapManager()
 		self.mm_names = self.mm.getMapNames() 
 		random.seed(time.time())
@@ -126,6 +127,14 @@ class PluginSession(Plugin.Plugin):
 		self.resize(self.wParent.size().width(), self.wParent.size().height())
 		QtCore.QObject.connect(self.qBtnLogin, QtCore.SIGNAL('clicked()'), self.clickBtnLogin)
 
+		if os.path.exists('login.cfg'):
+			fd = open('login.cfg', 'r')
+			__user = fd.readline().strip()
+			__pass = fd.readline().strip()
+		
+			self.qFieldNick.setText(__user)
+			self.qFieldPass.setText(__pass)
+		
 		self.qLabelMsg.setText('Waiting     ')
 		
 
