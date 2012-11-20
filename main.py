@@ -11,7 +11,7 @@ from PyQt4 import QtGui
 from PyQt4 import QtCore
 
 import struct
-import session
+import Session
 import sys
 import os
 import zipfile
@@ -19,10 +19,10 @@ import time
 from ctypes import *
 import math
 
-import pluginSession
-import pluginChat
-import pluginMaps
-import pluginBattles
+import PluginSession
+import PluginChat
+import PluginMaps
+import PluginBattles
 
 VERSION = 'SpringPlay-%s-A' % (version.getVersionString())
 print(VERSION)
@@ -38,25 +38,25 @@ def regPlugin(plugin):
 	* display plugins in treeview
 	* select default plugin to display
 '''
-regPlugin(pluginSession.pluginSession(
+regPlugin(PluginSession.PluginSession(
 	'Session', 'Leonard Kevin McGuire Jr', 
 	'Manages network connection to the lobby server.',
 	'builtin-%s' % (VERSION),
 	gPlugins
 ))
-regPlugin(pluginChat.pluginChat(
+regPlugin(PluginChat.PluginChat(
 	'Chat', 'Leonard Kevin McGuire Jr',
 	'Manages chat channels.',
 	'builtin-%s' % (VERSION),
 	gPlugins
 ))
-regPlugin(pluginBattles.pluginBattles(
+regPlugin(PluginBattles.PluginBattles(
 	'Battles', 'Leonard Kevin McGuire Jr',
 	'Management Of Battles',
 	'builtin-%s' % (VERSION),
 	gPlugins
 ))
-regPlugin(pluginMaps.pluginMaps(
+regPlugin(PluginMaps.PluginMaps(
 	'Maps', 'Leonard Kevin McGuire Jr',
 	'Management of maps',
 	'builtin-%s' % (VERSION),

@@ -1,6 +1,6 @@
-import plugin
+import Plugin
 
-class pluginMaps(plugin.Plugin):
+class PluginMaps(Plugin.Plugin):
 	'''
 		Determine if we have an utility to handle sd7 archives.
 			If not demand focus and prompt for it.

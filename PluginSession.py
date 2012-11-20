@@ -1,13 +1,13 @@
-import plugin
-import mapManager
+import Plugin
+import MapManager
 import random
 import time
 import math
-import session
+import Session
 from PyQt4 import QtCore
 from PyQt4 import QtGui
 
-class pluginSession(plugin.Plugin):
+class PluginSession(Plugin.Plugin):
 	'''
 		* can do various chores like maintain sycnhronous network socket
 	'''
@@ -16,8 +16,8 @@ class pluginSession(plugin.Plugin):
 	lobbyCbs = []
 	
 	def __init__(self, name, author, description, version, gplugins):
-		plugin.Plugin.__init__(self, name, author, description, version, gplugins)
-		self.mm = mapManager.getMapManager()
+		Plugin.Plugin.__init__(self, name, author, description, version, gplugins)
+		self.mm = MapManager.getMapManager()
 		self.mm_names = self.mm.getMapNames() 
 		random.seed(time.time())
 		self.mm_dndx = random.randint(0, len(self.mm_names) - 1)

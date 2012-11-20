@@ -1,8 +1,8 @@
-import plugin
+import Plugin
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
-class pluginBattles(plugin.Plugin):
+class PluginBattles(Plugin.Plugin):
 	etypes = []
 
 	def sessionCb(self, session, event, args):
@@ -20,7 +20,7 @@ class pluginBattles(plugin.Plugin):
 	def initFormal(self):
 		# initialize the network session
 		self.psession = self.getPlugin('Session')
-		self.psession.registerCb(self, pluginBattles.sessionCb)
+		self.psession.registerCb(self, PluginBattles.sessionCb)
 		# initialize the user interface
 		item = QtGui.QTreeWidgetItem();
 		item.setText(0, 'test')
