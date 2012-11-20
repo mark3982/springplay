@@ -186,6 +186,7 @@ class mapManager:
 			out = create_string_buffer(w * h * 2)
 			native.native['DXT1_decode'](c_char_p(data), c_uint(len(data)), c_uint(w), c_uint(h), out)
 			qimg = QtGui.QImage(out, 1024, 1024, QtGui.QImage.Format_RGB16)
+			print('native done')
 			return qimg, out
 			
 

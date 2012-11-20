@@ -11,7 +11,10 @@ class PluginBattles(Plugin.Plugin):
 		# print(self.etypes)
 		# updatebattleinfo, battleopened, joinedbattle, clientstatus, adduser
 		if event == 'updatebattleinfo':
-			print(event, args)
+			item = QtGui.QTreeWidgetItem();
+			item.setText(0, args[0])
+			self._MainWindow__tvnode.insertChild(0, item)
+			self.registerForMenuSelection(item)
 		if event == 'joinedbattle':
 			print(event, args)
 		if event == 'battleopened':

@@ -30,7 +30,7 @@ class PluginSession(Plugin.Plugin):
 			return
 		self.wParent.repaint()
 		self.rotiter = self.rotiter + 0.01
-		session.Update(self.lobby, self.lobbyCb)
+		Session.Update(self.lobby, self.lobbyCb)
 
 	def registerCb(self, obj, _cb):
 		self.lobbyCbs.append((obj, _cb))
@@ -59,10 +59,14 @@ class PluginSession(Plugin.Plugin):
 		h = self.wParent.size().height()
 
 		painter = QtGui.QPainter(self.wParent)
+		if w > h:
+			r = w * .1 * 2
+		else:
+			r = h * .1 * 2
 		self.drawRotatingSquares(
 			painter, w, h,
 			w * 0.5, h * 0.25,
-			100, 10, 5, self.rotiter, 20, rgbm
+			r, 10, 5, self.rotiter, 20, rgbm
 		)
 
 	def drawRotatingSquares(self, painter, w, h, x, y, radius, number, bs, iter, wf, rgbm):
@@ -72,8 +76,8 @@ class PluginSession(Plugin.Plugin):
 		painter.setBackground(QtGui.QColor(0, 0, 0))
 
 		# this should go somewhere else...
-		qimg = self.mm.getMiniMap(self.mm_names[self.mm_dndx])
-		painter.drawImage(QtCore.QRect(0, 0, w, h), qimg, QtCore.QRect(0, 0, -1, -1))
+		#qimg = self.mm.getMiniMap(self.mm_names[self.mm_dndx])
+		#painter.drawImage(QtCore.QRect(0, 0, w, h), qimg, QtCore.QRect(0, 0, -1, -1))
 
 		radstep = (math.pi * 2) / number
 		i = 0
@@ -133,7 +137,7 @@ class PluginSession(Plugin.Plugin):
 			print('f')
 			self.qLabelMsg.setText('Working')
 			self.qBtnLogin.setText('Cancel')
-			self.lobby = session.Create(self.qFieldNick.text(), self.qFieldPass.text())
+			self.lobby = Session.Create(self.qFieldNick.text(), self.qFieldPass.text())
 			return
 		if self.qBtnLogin.text() == 'Cancel':
 			self.lobby = None

@@ -9,6 +9,8 @@ LOG_PACKET = 200
 LOG_HEAVY = 100
 LOG_LIGHT = 50
 
+#LOG_HEAVY = 200
+
 def loghdlr(session, level, msg):
 	if session['loglvl'] >= level:
 		if session['loghdlr'] is not None:
@@ -237,8 +239,18 @@ def Update(session, cb):
 				continue
 			session['users'][b_nick]['online'] = False
 			cb(session, 'removeuser', (b_nick,))
-			continue			
-		print('unknown-message-type', seg)
+			continue
+		if parts[0] == 'CHANNELTOPIC':
+			channel = parts[1]
+			whom = parts[2]
+			flags = int(parts[3])
+			offset = len(parts[0]) + 1 + len(parts[1]) + 1 + len(parts[2]) + 1 + len(parts[3]) + 1
+			message = seg[offset:]
+			cb(session, 'VOICE', (channel, whom, flags, message))
+			continue 
+			
+		print('------UNKNOWN NETWORK MESSAGE------')
+		print(parts)
 		exit()
 	return
 
