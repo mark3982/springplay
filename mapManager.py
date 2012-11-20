@@ -14,6 +14,15 @@ import zipfile
 	independant), and then rely on configuration panel for input of
 	the correct map directory or directories.
 '''
+gMapMan = None
+
+def getMapManager():
+	global gMapMan
+	
+	if gMapMan is None:
+		gMapMan = mapManager(False)
+	return gMapMan
+
 class mapManager:
 	def __init__(self, useHTTPForMaps):
 		self.refresh()

@@ -17,7 +17,7 @@ class pluginSession(plugin.Plugin):
 	
 	def __init__(self, name, author, description, version, gplugins):
 		plugin.Plugin.__init__(self, name, author, description, version, gplugins)
-		self.mm = mapManager.mapManager()
+		self.mm = mapManager.getMapManager()
 		self.mm_names = self.mm.getMapNames() 
 		random.seed(time.time())
 		self.mm_dndx = random.randint(0, len(self.mm_names) - 1)

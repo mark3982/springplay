@@ -20,3 +20,7 @@ class Plugin:
 			if plugin.info_name == name:
 				return plugin
 		return None
+	def menuSelection(self, item):
+		pass
+	def registerForMenuSelection(self, item):
+		self._MainWindow__tvhandler.append(item)

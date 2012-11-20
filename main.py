@@ -102,10 +102,11 @@ class MainWindow(QtGui.QWidget):
 			pWidget = QWidgetEx(self)
 			plug.pParent = self			# plugin parent
 			plug.wParent = pWidget			# widget parent
-			plug.initFormal()
 			plug.__tvnode = QtGui.QTreeWidgetItem()
 			plug.__tvnode.setText(0, plug.info_name)
 			plug.__tvnodes = [plug.__tvnode]
+			plug.__tvhandler = []
+			plug.initFormal()
 			self.wTreeView.insertTopLevelItems(0, [plug.__tvnode])
 			plug.wParent.hide()
 
@@ -138,6 +139,18 @@ class MainWindow(QtGui.QWidget):
 	def treeViewSelectionChanged(self):
 		sitem = self.wTreeView.selectedItems()[0]
 		for plug in gPlugins:
+			# lets the plugin register a handler for
+			# a specific item in the treeview normally it
+			# will be for items it has added
+			if sitem in plug.__tvhandler:
+				plug.menuSelection(sitem)
+				return
+			# causes the plugin to display in the right
+			# part of the main window when it's treeview
+			# item is selected which is represented by
+			# plug.__tvnode and also inside of plug.__tvnodes
+			# since plug.__tvnodes.append(plug.__tvnode) should
+			# always have happened
 			if sitem in plug.__tvnodes:
 				if self.activePlug != plug:
 					if self.activePlug is not None:
