@@ -37,14 +37,15 @@ def getMapManager():
 #
 __async_workorders = []
 __async_worker = None
-	
+__async_cache = {}
+
 def __fetchMiniMapSync(mapName):
 	# http://zero-k.info/Resources/Heartbreaker_v2.minimap.jpg
 	url = 'http://zero-k.info/Resources/%s.minimap.jpg' % mapName
 	try:
 		fd = urllib.request.urlopen(url)
 	except Exception as e:
-		print('EXCEPTION', e)
+		#print('EXCEPTION(%s)' % mapName, e)
 		return None
 	data = fd.read()
 	fd.close()
@@ -55,25 +56,34 @@ def __fetchMiniMapAsyncWorker():
 
 	while True:
 		norder = []
-		print('2nd thread')
+		ct = time.time()
 		while len(__async_workorders) > 0:
 			# if success call the callback and
 			# if failure then place order onto
 			# the end of the work order list
 			order = __async_workorders.pop()
-			data = __fetchMiniMapSync(order[0])
-			if data is not None:
-				fd = open('./mapimages/%s.minimap.jpg' % (order[0]), 'wb')
-				fd.write(data)
-				fd.close()
-				order[1](order[0])
+			# only retry every 60 seconds after
+			# the first try since order[2] will
+			# be zero on the first try
+			td = ct - order[2] 
+			if td > 60:
+				print(order[0], td)
+				data = __fetchMiniMapSync(order[0])
+				if data is not None:
+					fd = open('./mapimages/%s.minimap.jpg' % (order[0]), 'wb')
+					fd.write(data)
+					fd.close()
+					order[1](order[0])
+				else:
+					norder.append(order)
+				order[2] = ct
 			else:
-				print('map fetch failed', order[0])
 				norder.append(order)
 		__async_workorders = norder
 		time.sleep(2)
 	return
 
+	
 def fetchMiniMapAsync(mapName, callback):
 	global __async_workorders
 	global __async_worker;
@@ -87,11 +97,16 @@ def fetchMiniMapAsync(mapName, callback):
 	if not os.path.exists(mapImagesDir):
 		os.mkdir(mapImagesDir)
 	if os.path.exists('%s/%s.minimap.jpg' % (mapImagesDir, mapName)):
-		print('map was local', mapName)
+		if mapName in __async_cache:
+			return __async_cache[mapName]
 		qimage = QtGui.QImage('%s/%s.minimap.jpg' % (mapImagesDir, mapName))
+		__async_cache[mapName] = qimage
 		return qimage
-	print('order for map', mapName)
-	__async_workorders.append((mapName, callback))
+	# make sure a work order does not already exist
+	for order in __async_workorders:
+		if order[0] == mapName:
+			return None
+	__async_workorders.append([mapName, callback, 0])
 	return None
 
 class mapManager:
