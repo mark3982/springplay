@@ -71,7 +71,8 @@ class PluginBattles(Plugin.Plugin):
 	# happen which should redraw any missing images.
 	#
 	def checkForForceRedraw(self):
-		if mapsUpdated:
+		self.qTimer.singleShot(1000, self.checkForForceRedraw)
+		if self.mapsUpdated:
 			self.wParent.repaint()
 		
 	def menuSelection(self, item):
@@ -170,8 +171,6 @@ class PluginBattles(Plugin.Plugin):
 				colcnt = 1
 			if rowcnt < 1:
 				rowcnt = 1
-				
-			print('colcnt/rowcnt', colcnt, rowcnt)
 			
 			# battles
 			bc = 0
@@ -202,9 +201,10 @@ class PluginBattles(Plugin.Plugin):
 					else:
 						tw = gridw
 					painter.drawRect(ax, ay, tw, gridh)
-					painter.drawText(ax + 110, ay + fontm.height() * 0 + 10, b['mod'])
-					painter.drawText(ax + 110, ay + fontm.height() * 1 + 10, b['desc'])
-					painter.drawText(ax + 110, ay + fontm.height() * 2 + 10, b['map'])
+					painter.drawText(ax + 110, ay + fontm.height() * 0 + 10, 'Mod: %s' % b['mod'])
+					painter.drawText(ax + 110, ay + fontm.height() * 1 + 10, 'Desc: %s' % b['desc'])
+					painter.drawText(ax + 110, ay + fontm.height() * 2 + 10, 'Map: %s' % b['map'])
+					
 				bc = bc + 1
 			return
 		return
