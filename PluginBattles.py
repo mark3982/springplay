@@ -10,6 +10,8 @@ class PluginBattles(Plugin.Plugin):
 	# tracks all the battles
 	battles = {}
 	
+	mapsUpdated = False
+	
 	def sessionCb(self, session, event, args):
 		if event == 'battleopened':
 			args['playerCount'] = 0
@@ -57,6 +59,20 @@ class PluginBattles(Plugin.Plugin):
 		self.panel = 1
 		
 		self.wParent.paintHook = self.paintHook
+		
+		self.qTimer = QtCore.QTimer()
+		self.qTimer.singleShot(1000, self.checkForForceRedraw)
+		return
+	
+	#
+	# If the asynchronous callback for a MapManager URL
+	# fetch has been executed the mapsUpdated will be 
+	# set to True and we shall cause a paint event to
+	# happen which should redraw any missing images.
+	#
+	def checkForForceRedraw(self):
+		if mapsUpdated:
+			self.wParent.repaint()
 		
 	def menuSelection(self, item):
 		itemName = item.text(0)
@@ -112,17 +128,29 @@ class PluginBattles(Plugin.Plugin):
 	
 	def paintHook(self, event):
 		self.updateUI()
+		
+	def mapFetchAsyncCb(self, mapName):
+		# this is actually called from another
+		# thread so I am not sure how thread
+		# safe it is, but if problems arise this
+		# is likely the culprit
+		self.mapsUpdated = True
 	
 	def updateUI(self):
 		# Battle Rooms
 		if self.paneltab == 1:
 			# current battle
-			pass
+			return
 		if self.paneltab == 2:
 			# all battles
 			panel = self.wParent
 			w = panel.width()
 			h = panel.height()
+			
+			# this is set by a callback from the MapManager module
+			# when a asynchronous URL fetch is done to get the
+			# minimap image, or anything else and we need to redraw
+			self.mapsUpdated = False 
 			
 			# unattach all the widgets in the pool from their parent
 			self.widgetsDeref()
@@ -136,7 +164,8 @@ class PluginBattles(Plugin.Plugin):
 			gridw = 400
 			gridh = 100
 			colcnt = int(w / gridw)
-			rowcnt = int(h / gridh)
+			rowcnt = int(h / gridh) + 1
+			
 			if colcnt < 1:
 				colcnt = 1
 			if rowcnt < 1:
@@ -160,39 +189,25 @@ class PluginBattles(Plugin.Plugin):
 					ax = acol * gridw				# actual x (col)
 					ay = arow * gridh				# actual y (row)
 					# okay render this to the panel
-					mapImage = self.mapCacheGet(b['map'])
+					#mapImage = self.mapCacheGet(b['map'])
+					mapImage = MapManager.fetchMiniMapAsync(b['map'], self.mapFetchAsyncCb)
 					if mapImage is not None:
 						painter.drawImage(
 											QtCore.QRect(ax, ay, 100, 100), 
 											mapImage, 
 											QtCore.QRect(0, 0, -1, -1)
 						)
-						painter.drawText(ax + 110, ay + fontm.height() * 0 + 10, b['mod'])
-						painter.drawText(ax + 110, ay + fontm.height() * 1 + 10, b['desc'])
-						painter.drawText(ax + 110, ay + fontm.height() * 2 + 10, b['map'])
+					if acol == colcnt - 1:
+						tw = w - ax
+					else:
+						tw = gridw
+					painter.drawRect(ax, ay, tw, gridh)
+					painter.drawText(ax + 110, ay + fontm.height() * 0 + 10, b['mod'])
+					painter.drawText(ax + 110, ay + fontm.height() * 1 + 10, b['desc'])
+					painter.drawText(ax + 110, ay + fontm.height() * 2 + 10, b['map'])
 				bc = bc + 1
-			
-		
-			# My Current Battle
-			# Show All Battles
-		
-		# all battles display
-			# ---------------------------------------------
-			# reserve upper portion for search controls
-			# ---------------------------------------------
-			# need to be able to create a grid and for each
-			# grid cell the battle's map is displayed along
-			# with some battle information underneath it
-			#      also on side have buttons to see next page because
-			#      all the battles are not likely to fit onto a single
-			#      page
-		# current battle display (if we are currently in a battle room)
-			# battle chat box in upper left
-			# chat box entry text 
-			# user list on right using treeview likely
-			# map image in bottom right
-			# bottom panel has button to rejoin/join/start battle
-		pass
+			return
+		return
 		
 	def resize(self, w, h):
-		pass
+		return
