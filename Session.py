@@ -107,49 +107,53 @@ def Update(session, cb):
 		#print(parts[0])
 		if parts[0] == 'ADDUSER':
 			#loghdlr(session, LOG_HEAVY, 'adduser %s %s %s' % (parts[1], parts[2], parts[3]))
-			session['users'][parts[1]] = {
-				'country': 	parts[2], 
-				'unknown-id': 	parts[3],
-				'battle': 	None,
-				'status':	None,
-				'online':	True,
-			}
-			wrapCb(cb, session, 'adduser', (parts[1],))
+			wrapCb(cb, session, 'adduser', {
+				'user':			parts[1],
+				'country':		parts[2],
+				'id':			parts[3]
+			})
 			continue
 		if parts[0] == 'CLIENTS':
 			b_channel = parts[1]
-			if b_channel not in session['channels']:
-				session['throwbk'].append(seg)
-				continue
-			session['channels'][parts[1]]['clients'] = parts[2:]
-			wrapCb(cb, session, 'clients', (parts[1], parts[2:]))
+			wrapCb(cb, session, 'clients', {
+				'channel':		b_channel,
+				'unknown':		parts[2:]
+			})
 			continue
 		if parts[0] == 'JOIN':
-			print('JOIN', parts[1])
-			session['channels'][parts[1]] = {
-				'clients':		[]
-			}
-			wrapCb(cb, session, 'join', (parts[1],))
+			wrapCb(cb, session, 'join', {
+				'unknown':		parts[1]
+			})
 			continue
 		if parts[0] == 'JOINED':
 			b_channel = parts[1]
 			b_nick = parts[2]
 			session['channels'][b_channel]['clients'].append(b_nick)
-			wrapCb(cb, session, 'joined', (b_channel, b_nick))
+			wrapCb(cb, session, 'joined', {
+				'channel':		b_channel,
+				'user':			b_nick
+			})
 			continue
 		if parts[0] == 'LEFT':
 			b_channel = parts[1]
 			b_nick = parts[2]
 			b_msg = ' '.join(parts[3:])
 			session['channels'][b_channel]['clients'].remove(b_nick)
-			wrapCb(cb, session, 'left', (b_channel, b_nick, b_msg))
+			wrapCb(cb, session, 'left', {
+				'channel':		b_channel,
+				'user':			b_nick,
+				'message':		b_msg
+			})
 			continue
 		if parts[0] == 'SAID':
 			b_channel = parts[1]
 			b_nick = parts[2]
 			b_msg = seg[4 + len(parts[1]) + 1 + len(parts[2]) + 1:]
-			#session['channels'][b_channel]['log'].append((b_nick, b_msg))
-			wrapCb(cb, session, 'said', (b_channel, b_nick, b_msg))
+			wrapCb(cb, session, 'said', {
+				'channel':		b_channel,
+				'user':			b_nick,
+				'message':		b_msg
+			})
 			continue
 		if parts[0] == 'ACCEPTED':
 			loghdlr(session, LOG_LIGHT, 'lobby accepted our connection')
@@ -157,19 +161,24 @@ def Update(session, cb):
 			continue
 		if parts[0] == 'DENIED':
 			loghdlr(session, LOG_PACKET, 'lobby denied our connection (%s)' % seg[7:])
-			wrapCb(cb, session, 'denied', (seg[7:],))
+			wrapCb(cb, session, 'denied', {'reason': seg[7:]})
 			continue
 		if parts[0] == 'MOTD':
 			loghdlr(session, LOG_PACKET, 'lobby-motd %s' % seg[5:])
-			wrapCb(cb, session, 'motd', (seg[5:],))
+			wrapCb(cb, session, 'motd', {'motd': seg[5:]})
 			continue
 		if parts[0] == 'BATTLEOPENED':
+		    # BATTLEOPENED 
+			# 7021 0 0 
+			# Beryllium 
+			# 94.23.171.71
+			# 8570 32 0 0 0 Small_Divide-Remake-v04.BA springie autohost.Balanced Annihilation V7.72
 			b_id = parts[1]
 			b_u1 = parts[2]
 			b_u2 = parts[3]
 			b_host = parts[4]
 			b_ip = parts[5]
-			b_u3 = parts[6]
+			b_port = parts[6]
 			b_uu1 = parts[7]
 			b_uu2 = parts[8]
 			b_uu3 = parts[9]
@@ -178,51 +187,51 @@ def Update(session, cb):
 			b_map = parts[0]
 			b_desc = parts[1]
 			b_mod = parts[2]
-			session['battles'][b_id] = {
-				'host':		b_host,
-				'ip': 		b_ip,
-				'map': 		b_map,
-				'desc': 	b_desc,
-				'mod': 		b_mod,
-				'users':	[],
-			}
-			wrapCb(cb, session, 'battleopened', (b_id,))
+			wrapCb(cb, session, 'battleopened', {
+					'host':		b_host,
+					'id':		b_id,
+					'ip':		b_ip,
+					'port':		b_port,
+					'map':		b_map,
+					'desc':		b_desc,
+					'mod':		b_mod
+				}
+			)
 			continue
 		if parts[0] == 'BATTLECLOSED':
 			# need to change
 			b_id = parts[1]
-			del session['battles'][b_id]
+			wrapCb(cb, session, 'battleclosed', {
+				'id':				b_id,
+			})
 			continue
 		if parts[0] == 'UPDATEBATTLEINFO':
 			b_id = parts[1]
-			b_u1 = parts[2]
+			b_playerCount = parts[2]
 			b_u2 = parts[3]
 			b_u3 = parts[4]
 			b_map = parts[5]
-			session['battles'][b_id]['map'] = b_map
-			wrapCb(cb, session, 'updatebattleinfo', (b_id, b_u1, b_u2, b_u3, b_map))
+			wrapCb(cb, session, 'updatebattleinfo', {
+				'id':				b_id,
+				'playerCount':		b_playerCount,
+				'map':				b_map,
+			})
 			continue
 		if parts[0] == 'JOINEDBATTLE':
 			b_id = parts[1]
 			b_nick = parts[2]
-			if b_nick not in session['users']:
-				session['throwbk'].append(seg)
-				continue
-			if b_id not in session['battles']:
-				session['throwbk'].append(seg)
-				continue
-			session['users'][b_nick]['battle'] = b_id
-			session['battles'][b_id]['users'].append(b_nick)
-			wrapCb(cb, session, 'joinedbattle', (b_nick, b_id))
+			wrapCb(cb, session, 'joinedbattle', {
+				'user':			b_nick,
+				'id':			b_id
+			})
 			continue
 		if parts[0] == 'CLIENTSTATUS':
 			b_nick = parts[1]
-			b_status = parts[2]
-			if b_nick not in session['users']:
-				session['throwbk'].append(seg)
-				continue
-			session['users'][b_nick]['status'] = int(b_status)
-			wrapCb(cb, session, 'clientstatus', (b_nick, b_status))
+			b_status = int(parts[2])
+			wrapCb(cb, session, 'clientstatus', {
+				'user':			b_nick,
+				'status':		b_status
+			})
 			continue
 		if parts[0] == 'LOGININFOEND':
 			#JoinChannel(session, 'en')
@@ -230,22 +239,14 @@ def Update(session, cb):
 		if parts[0] == 'LEFTBATTLE':
 			b_id = parts[1]
 			b_nick = parts[2]
-			if b_nick not in session['users']:
-				session['throwbk'].append(seg)
-				continue
-			if b_id not in session['battles']:
-				session['throwbk'].append(seg)
-				continue
-			session['battles'][b_id]['users'].remove(b_nick)
-			wrapCb(cb, session, 'leftbattle', (b_nick, b_id))
+			wrapCb(cb, session, 'leftbattle', {
+				'user':		b_nick,
+				'id':		b_id
+			})
 			continue
 		if parts[0] == 'REMOVEUSER':
 			b_nick = parts[1]
-			if b_nick not in session['users']:
-				session['throwbk'].append(seg)
-				continue
-			session['users'][b_nick]['online'] = False
-			wrapCb(cb, session, 'removeuser', (b_nick,))
+			wrapCb(cb, session, 'removeuser', {'user': b_nicks})
 			continue
 		if parts[0] == 'CHANNELTOPIC':
 			channel = parts[1]
@@ -253,12 +254,20 @@ def Update(session, cb):
 			flags = int(parts[3])
 			offset = len(parts[0]) + 1 + len(parts[1]) + 1 + len(parts[2]) + 1 + len(parts[3]) + 1
 			message = seg[offset:]
-			wrapCb(cb, session, 'VOICE', (channel, whom, flags, message))
+			wrapCb(cb, session, 'channeltopic', {
+				'channel':		channel,
+				'user':			whom,
+				'flags':		flags,
+				'message':		message
+			})
 			continue 
 		if parts[0] == 'SAIDBATTLE':
 			whom = parts[1]
 			message = seg[len(parts[0]) + 1 + len(parts[1]) + 1:]
-			wrapCb(cb, session, 'SAIDBATTLE', (whom, message))
+			wrapCb(cb, session, 'saidbattle', {
+				'user':			whom,
+				'message':		message
+			})
 			continue
 			
 		print('------UNKNOWN NETWORK MESSAGE------')

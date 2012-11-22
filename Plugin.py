@@ -14,6 +14,8 @@ class Plugin:
 		self.menuText = menuText
 		self.gplugins = gplugins
 		return
+	def resize(self):
+		return
 	def initFormal(self):
 		return
 	def getPlugin(self, name):

@@ -11,30 +11,24 @@ class PluginBattles(Plugin.Plugin):
 	battles = {}
 	
 	def sessionCb(self, session, event, args):
-		if event not in self.etypes:
-			self.etypes.append(event)
-		# print(self.etypes)
-		# updatebattleinfo, battleopened, joinedbattle, clientstatus, adduser
+		if event == 'battleopened':
+			args['playerCount'] = 0
+			args['playerList'] = []
+			self.battles[args['id']] = args
 		if event == 'updatebattleinfo':
-			#item = QtGui.QTreeWidgetItem();
-			#item.setText(0, args[0])
-			#self._MainWindow__tvnode.insertChild(0, item)
-			#self.registerForMenuSelection(item)
-			self.battles[args[0]] = {
-				'map':				args[4],
-				'playerCount':		args[1],
-				'playerList':		[]
-			}
-			print('@@', args)
+			self.battles[args['id']]['map'] = args['map']
+			self.battles[args['id']]['playerCount'] = args['playerCount']
+			return
 		if event == 'joinedbattle':
-			self.battles[args[1]]['playerList'].append(args[0])
+			self.battles[args['id']]['playerList'].append(args['user'])
+			return
 		if event == 'leftbattle':
-			### in some cases they are not in the list i think this
-			### needs to be fixed somewhere near here
-			if args[0] in self.battles[args[1]]['playerList']:
-				self.battles[args[1]]['playerList'].remove(args[0])
-		#if event == 'battleopened':
-		#	print(event, args)
+			if args['id'] not in self.battles:
+				return
+			if args['user'] in self.battles[args['id']]['playerList']:
+				self.battles[args['id']]['playerList'].remove(args['user'])
+			return
+		return
 
 	def initFormal(self):
 		# initialize the network session
@@ -147,6 +141,7 @@ class PluginBattles(Plugin.Plugin):
 				
 			print('colcnt/rowcnt', colcnt, rowcnt)
 			
+			colcnt = 1
 			
 			# battles
 			bc = 0
@@ -180,6 +175,10 @@ class PluginBattles(Plugin.Plugin):
 											QtCore.QRect(ax, ay, 100, 100), 
 											mapImage, 
 											QtCore.QRect(0, 0, -1, -1)
+						)
+						painter.drawText(
+							ax, ay + 50,
+							b['map']
 						)
 				bc = bc + 1
 			
