@@ -63,10 +63,10 @@ class PluginBattles(Plugin.Plugin):
 		print(itemName)
 		if itemName == 'Current Battle':
 			self.paneltab = 1
-			self.updateUI()
+			self.wParent.repaint()
 		if itemName == 'Find Battle':
 			self.paneltab = 2
-			self.updateUI()
+			self.wParent.repaint()
 
 	def resize(self):
 		self.updateUI()
@@ -128,20 +128,21 @@ class PluginBattles(Plugin.Plugin):
 			self.widgetsDeref()
 			
 			painter = QtGui.QPainter(panel)
+			fontm = painter.fontMetrics()
 			
 			#w = self.widgetsGet(QtGui.QTreeWidgetItem)
 			#print(w)
 			
-			colcnt = int(w / 100)
-			rowcnt = int(h / 100)
+			gridw = 400
+			gridh = 100
+			colcnt = int(w / gridw)
+			rowcnt = int(h / gridh)
 			if colcnt < 1:
 				colcnt = 1
 			if rowcnt < 1:
 				rowcnt = 1
 				
 			print('colcnt/rowcnt', colcnt, rowcnt)
-			
-			colcnt = 1
 			
 			# battles
 			bc = 0
@@ -156,30 +157,19 @@ class PluginBattles(Plugin.Plugin):
 					andx = bc - off					# actual index (relative to page)
 					arow = int(andx / colcnt)		# actual row
 					acol = andx - (arow * colcnt)	# actual col
-					ax = acol * 100					# actual x (col)
-					ay = arow * 100					# actual y (row)
+					ax = acol * gridw				# actual x (col)
+					ay = arow * gridh				# actual y (row)
 					# okay render this to the panel
 					mapImage = self.mapCacheGet(b['map'])
 					if mapImage is not None:
-						#print('***found***', b['map'], ax, ay)
-						#label = self.widgetsGet('label')
-						#if label is None:
-						#	label = QtGui.QLabel()
-						#	self.widgetsPut('label', label)
-						#label.setPixmap(mapImage)
-						#label.move(ax, ay)
-						#label.resize(100, 100)
-						#label.setParent(panel)
-						#label.setText('test')
 						painter.drawImage(
 											QtCore.QRect(ax, ay, 100, 100), 
 											mapImage, 
 											QtCore.QRect(0, 0, -1, -1)
 						)
-						painter.drawText(
-							ax, ay + 50,
-							b['map']
-						)
+						painter.drawText(ax + 110, ay + fontm.height() * 0 + 10, b['mod'])
+						painter.drawText(ax + 110, ay + fontm.height() * 1 + 10, b['desc'])
+						painter.drawText(ax + 110, ay + fontm.height() * 2 + 10, b['map'])
 				bc = bc + 1
 			
 		
