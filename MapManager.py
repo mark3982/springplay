@@ -279,8 +279,24 @@ class mapManager:
 		miniMapData = data[miniPtr:miniPtr + int((1024*1024*4)/8)]
 		qimg, qimgraw = self.decodeDXT1(miniMapData, 1024, 1024)
 		return qimg, qimgraw	
+	
+	def getNameByShortName(self, shortName):
+		shortName = shortName.replace('-', '')
+		shortName = shortName.replace('_', '')
+		for name in self.maps:
+			sn = name[0:name.find('.')]
+			sn = sn.replace('-', '')
+			sn = sn.replace('_', '')
+			if sn.lower() == shortName.lower():
+				return name
+		return shortName
 
 	def getMiniMap(self, name):
+		# the manager likes to use actual filenames, but
+		# most other stuff will want to simply use the
+		# name of the map with out the file extension
+		name = self.getNameByShortName(name)
+	
 		storkey = 'mapManager.minimap.%s' % name
 		if storage.exist(storkey):
 			qimg = QtGui.QImage(storage.read(storkey), 1024, 1024, QtGui.QImage.Format_RGB16)
