@@ -1,12 +1,16 @@
 import os
+import os.path
 import sys
 import subprocess
 import struct
 import native
+import time
+import urllib.request
 from ctypes import *
 from PyQt4 import QtGui
 import storage
 import zipfile
+import threading
 
 '''
 	Handles enumerating all the maps on the system. Need to change it
@@ -22,6 +26,73 @@ def getMapManager():
 	if gMapMan is None:
 		gMapMan = mapManager(False)
 	return gMapMan
+
+#
+# These methods provide a way to fetch a minimap image
+# from a URL which is provided below. This is better
+# in some cases because we may not have the map file
+# and thus the minimap image is a fraction of the size
+# to download. I do belieive this is basically exactly
+# what SpringLobby and others are doing.
+#
+__async_workorders = []
+__async_worker = None
+	
+def __fetchMiniMapSync(mapName):
+	# http://zero-k.info/Resources/Heartbreaker_v2.minimap.jpg
+	url = 'http://zero-k.info/Resources/%s.minimap.jpg' % mapName
+	try:
+		fd = urllib.request.urlopen(url)
+	except Exception as e:
+		print('EXCEPTION', e)
+		return None
+	data = fd.read()
+	fd.close()
+	return data
+	
+def __fetchMiniMapAsyncWorker():
+	global __async_workorders
+
+	while True:
+		norder = []
+		print('2nd thread')
+		while len(__async_workorders) > 0:
+			# if success call the callback and
+			# if failure then place order onto
+			# the end of the work order list
+			order = __async_workorders.pop()
+			data = __fetchMiniMapSync(order[0])
+			if data is not None:
+				fd = open('./mapimages/%s.minimap.jpg' % (order[0]), 'wb')
+				fd.write(data)
+				fd.close()
+				order[1](order[0])
+			else:
+				print('map fetch failed', order[0])
+				norder.append(order)
+		__async_workorders = norder
+		time.sleep(2)
+	return
+
+def fetchMiniMapAsync(mapName, callback):
+	global __async_workorders
+	global __async_worker;
+	
+	if __async_worker is None:
+		__async_worker = threading.Thread(target = __fetchMiniMapAsyncWorker, args = ())
+		__async_worker.setDaemon(True)
+		__async_worker.start()
+	# see if we have already downloaded it before
+	mapImagesDir = './mapimages'
+	if not os.path.exists(mapImagesDir):
+		os.mkdir(mapImagesDir)
+	if os.path.exists('%s/%s.minimap.jpg' % (mapImagesDir, mapName)):
+		print('map was local', mapName)
+		qimage = QtGui.QImage('%s/%s.minimap.jpg' % (mapImagesDir, mapName))
+		return qimage
+	print('order for map', mapName)
+	__async_workorders.append((mapName, callback))
+	return None
 
 class mapManager:
 	def __init__(self, useHTTPForMaps):
@@ -292,6 +363,7 @@ class mapManager:
 		return shortName
 
 	def getMiniMap(self, name):
+		#self.getMiniMapFromWeb(name)
 		# the manager likes to use actual filenames, but
 		# most other stuff will want to simply use the
 		# name of the map with out the file extension
