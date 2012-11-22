@@ -246,7 +246,7 @@ def Update(session, cb):
 			continue
 		if parts[0] == 'REMOVEUSER':
 			b_nick = parts[1]
-			wrapCb(cb, session, 'removeuser', {'user': b_nicks})
+			wrapCb(cb, session, 'removeuser', {'user': b_nick})
 			continue
 		if parts[0] == 'CHANNELTOPIC':
 			channel = parts[1]
