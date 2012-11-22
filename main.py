@@ -70,10 +70,10 @@ regPlugin(PluginMaps.PluginMaps(
 
 class QWidgetEx(QtGui.QWidget):
 	paintHook = None
-	def paintEvent(self, QPaintEvent):
-		QtGui.QWidget.paintEvent(self, QPaintEvent)
+	def paintEvent(self, event):
+		QtGui.QWidget.paintEvent(self, event)
 		if self.paintHook is not None:
-			self.paintHook(QPaintEvent)
+			self.paintHook(event)
 
 
 class MainWindow(QtGui.QWidget):
@@ -116,7 +116,7 @@ class MainWindow(QtGui.QWidget):
 		for plug in gPlugins:
 			pWidget = QWidgetEx(self)
 			plug.pParent = self			# plugin parent
-			plug.wParent = pWidget			# widget parent
+			plug.wParent = pWidget		# widget parent
 			plug.__tvnode = QtGui.QTreeWidgetItem()
 			plug.__tvnode.setFont(0, font)
 			plug.__tvnode.setText(0, plug.menuText)
@@ -154,12 +154,11 @@ class MainWindow(QtGui.QWidget):
 	'''
 	def treeViewSelectionChanged(self):
 		sitem = self.wTreeView.selectedItems()[0]
-		
+		oitem = sitem
 		# this will transverse down onto the root node
 		# and thus allow us to determine what plugin this
 		# sub-node belongs to and of course to display the
 		# plugin panel
-		parent = True
 		while sitem.parent() is not None:
 			sitem = sitem.parent()
 		
@@ -167,9 +166,8 @@ class MainWindow(QtGui.QWidget):
 			# lets the plugin register a handler for
 			# a specific item in the treeview normally it
 			# will be for items it has added
-			if sitem in plug.__tvhandler:
-				plug.menuSelection(sitem)
-				return
+			if oitem in plug.__tvhandler:
+				plug.menuSelection(oitem)
 			# causes the plugin to display in the right
 			# part of the main window when it's treeview
 			# item is selected which is represented by
