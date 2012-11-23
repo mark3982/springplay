@@ -88,6 +88,10 @@ def fetchMiniMapAsync(mapName, callback):
 	global __async_workorders
 	global __async_worker;
 	
+	# okay for the host we are fetching the files from
+	# spaces are turned into underscores so let us do that
+	mapName = mapName.replace(' ', '_')
+	
 	if __async_worker is None:
 		__async_worker = threading.Thread(target = __fetchMiniMapAsyncWorker, args = ())
 		__async_worker.setDaemon(True)
