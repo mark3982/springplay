@@ -128,7 +128,6 @@ def Update(session, cb):
 		if parts[0] == 'JOINED':
 			b_channel = parts[1]
 			b_nick = parts[2]
-			session['channels'][b_channel]['clients'].append(b_nick)
 			wrapCb(cb, session, 'joined', {
 				'channel':		b_channel,
 				'user':			b_nick
@@ -138,7 +137,6 @@ def Update(session, cb):
 			b_channel = parts[1]
 			b_nick = parts[2]
 			b_msg = ' '.join(parts[3:])
-			session['channels'][b_channel]['clients'].remove(b_nick)
 			wrapCb(cb, session, 'left', {
 				'channel':		b_channel,
 				'user':			b_nick,
@@ -168,33 +166,37 @@ def Update(session, cb):
 			wrapCb(cb, session, 'motd', {'motd': seg[5:]})
 			continue
 		if parts[0] == 'BATTLEOPENED':
-		    # BATTLEOPENED 
-			# 7021 0 0 
-			# Beryllium 
-			# 94.23.171.71
-			# 8570 32 0 0 0 Small_Divide-Remake-v04.BA springie autohost.Balanced Annihilation V7.72
 			b_id = parts[1]
-			b_u1 = parts[2]
-			b_u2 = parts[3]
-			b_host = parts[4]
-			b_ip = parts[5]
-			b_port = parts[6]
-			b_uu1 = parts[7]
-			b_uu2 = parts[8]
-			b_uu3 = parts[9]
-			tmp = seg[seg.find(b_uu3) + len(b_uu3) + 1:]
-			parts = tmp.split('\t')
-			b_map = parts[0]
-			b_desc = parts[1]
-			b_mod = parts[2]
+			b_type = parts[2]
+			b_nat = parts[3]
+			b_user = parts[4]
+			b_host = parts[5]
+			b_port = int(parts[6])
+			b_maxplayers = int(parts[7])
+			b_haspass = parts[8]
+			b_rank = parts[9]
+			b_hash = parts[10]
+			
+			eparts = ' '.join(parts[11:])
+			eparts = eparts.split('\t')
+			b_map = eparts[0]
+			b_desc = eparts[1]
+			b_mod = eparts[2]
+			
 			wrapCb(cb, session, 'battleopened', {
-					'host':		b_host,
-					'id':		b_id,
-					'ip':		b_ip,
-					'port':		b_port,
-					'map':		b_map,
-					'desc':		b_desc,
-					'mod':		b_mod
+					'user':			b_user,
+					'type':			b_type,
+					'nat':			b_nat,
+					'maxPlayers':	b_maxplayers,
+					'id':			b_id,
+					'host':			b_host,
+					'port':			b_port,
+					'hash':			b_hash,
+					'rank':			b_rank,
+					'hasPass':		b_haspass,
+					'map':			b_map,
+					'desc':			b_desc,
+					'mod':			b_mod
 				}
 			)
 			continue
@@ -207,14 +209,16 @@ def Update(session, cb):
 			continue
 		if parts[0] == 'UPDATEBATTLEINFO':
 			b_id = parts[1]
-			b_playerCount = parts[2]
-			b_u2 = parts[3]
-			b_u3 = parts[4]
-			b_map = parts[5]
+			b_specs = int(parts[2])
+			b_hasPass = parts[3]
+			b_hash = parts[4]
+			b_map = ' '.join(parts[5:])
 			wrapCb(cb, session, 'updatebattleinfo', {
 				'id':				b_id,
-				'playerCount':		b_playerCount,
+				'specs':			b_specs,
 				'map':				b_map,
+				'hasPass':			b_hasPass,
+				'hash':				b_hash
 			})
 			continue
 		if parts[0] == 'JOINEDBATTLE':
@@ -228,9 +232,20 @@ def Update(session, cb):
 		if parts[0] == 'CLIENTSTATUS':
 			b_nick = parts[1]
 			b_status = int(parts[2])
+			
+			bot = (b_status >> 6) & 1 == 1
+			moderator = (b_status >> 5) & 1 == 1
+			rank = (b_status >> 2) & 7 
+			away = (b_status >> 1) & 1 == 1
+			ingame = b_status & 1 == 1
+			
 			wrapCb(cb, session, 'clientstatus', {
 				'user':			b_nick,
-				'status':		b_status
+				'isBot':		bot,
+				'inGame':		ingame,
+				'isAway':		away,
+				'rank':			rank,
+				'isMod':		moderator
 			})
 			continue
 		if parts[0] == 'LOGININFOEND':
