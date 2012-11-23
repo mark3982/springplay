@@ -3,32 +3,57 @@ import MapManager
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
+def toBinary(val):
+	val = int(val)
+	b = ''
+	n = 1
+	c = 0
+	while c < 32:
+		if val & n > 0:
+			b = '1%s' % b
+		else:
+			b = '0%s' % b
+		n = n << 1
+		c = c + 1
+	return b
+
 class PluginBattles(Plugin.Plugin):
 	# some debugging crap
 	etypes = []
 
 	# tracks all the battles
 	battles = {}
+	players = {}
 	
 	mapsUpdated = False
 	
 	def sessionCb(self, session, event, args):
 		if event == 'battleopened':
-			args['playerCount'] = 0
-			args['playerList'] = []
+			args['players'] = []
+			args['specs'] = 0
 			self.battles[args['id']] = args
+			self.mapsUpdated = True
+			return
 		if event == 'updatebattleinfo':
 			self.battles[args['id']]['map'] = args['map']
-			self.battles[args['id']]['playerCount'] = args['playerCount']
+			self.battles[args['id']]['hash'] = args['hash']
+			self.battles[args['id']]['hasPass'] = args['hasPass']
+			self.battles[args['id']]['specs'] = args['specs']
+			self.mapsUpdated = True
 			return
 		if event == 'joinedbattle':
-			self.battles[args['id']]['playerList'].append(args['user'])
+			self.battles[args['id']]['players'].append(args['user'])
+			self.mapsUpdated = True
+			return
+		if event == 'clientstatus':
+			self.players[args['user']] = args
 			return
 		if event == 'leftbattle':
 			if args['id'] not in self.battles:
 				return
-			if args['user'] in self.battles[args['id']]['playerList']:
-				self.battles[args['id']]['playerList'].remove(args['user'])
+			if args['user'] in self.battles[args['id']]['players']:
+				self.battles[args['id']]['players'].remove(args['user'])
+			self.mapsUpdated = True
 			return
 		return
 
@@ -62,6 +87,14 @@ class PluginBattles(Plugin.Plugin):
 		
 		self.qTimer = QtCore.QTimer()
 		self.qTimer.singleShot(1000, self.checkForForceRedraw)
+		
+		self.image_cache = {}
+		
+		# set the background color
+		#pal = self.wParent.palette()
+		#pal.setColor(QtGui.QPalette.Window, QtGui.QColor(0xff, 0xff, 0xff))
+		#self.wParent.setPalette(pal)
+		#self.wParent.setAutoFillBackground(True)
 		return
 	
 	#
@@ -157,20 +190,34 @@ class PluginBattles(Plugin.Plugin):
 			self.widgetsDeref()
 			
 			painter = QtGui.QPainter(panel)
+			painter.setFont(QtGui.QFont('Tahoma'))
 			fontm = painter.fontMetrics()
 			
 			#w = self.widgetsGet(QtGui.QTreeWidgetItem)
 			#print(w)
 			
+			# ingame
+			if 'greenman' not in self.image_cache:
+				self.image_cache['greenman'] = QtGui.QImage('./images/greenman.png')
+			# idle
+			if 'blackman' not in self.image_cache:
+				self.image_cache['blackman'] = QtGui.QImage('./images/blackman.png')
+			if 'grayman' not in self.image_cache:
+				self.image_cache['grayman'] = QtGui.QImage('./images/grayman.png')
+				
+			gyoff = 50
+			
 			gridw = 400
 			gridh = 100
 			colcnt = int(w / gridw)
-			rowcnt = int(h / gridh) + 1
+			rowcnt = int(h / (gridh - gyoff)) + 1
 			
 			if colcnt < 1:
 				colcnt = 1
 			if rowcnt < 1:
 				rowcnt = 1
+			
+			
 			
 			# battles
 			bc = 0
@@ -178,6 +225,8 @@ class PluginBattles(Plugin.Plugin):
 			off = self.page * (colcnt * rowcnt)
 			for bk in self.battles:
 				b = self.battles[bk]
+				if b['mod'].lower().find('zero-k') < 0:
+					continue
 				if bc >= (off + sz):
 					# too far skip out
 					break
@@ -192,7 +241,7 @@ class PluginBattles(Plugin.Plugin):
 					mapImage = MapManager.fetchMiniMapAsync(b['map'], self.mapFetchAsyncCb)
 					if mapImage is not None:
 						painter.drawImage(
-											QtCore.QRect(ax, ay, 100, 100), 
+											QtCore.QRect(ax, ay + gyoff, 100, 100), 
 											mapImage, 
 											QtCore.QRect(0, 0, -1, -1)
 						)
@@ -200,11 +249,55 @@ class PluginBattles(Plugin.Plugin):
 						tw = w - ax
 					else:
 						tw = gridw
-					painter.drawRect(ax, ay, tw, gridh)
-					painter.drawText(ax + 110, ay + fontm.height() * 0 + 10, 'Mod: %s' % b['mod'])
-					painter.drawText(ax + 110, ay + fontm.height() * 1 + 10, 'Desc: %s' % b['desc'])
-					painter.drawText(ax + 110, ay + fontm.height() * 2 + 10, 'Map: %s' % b['map'])
+					painter.drawRect(ax, ay + gyoff, tw, gridh)
+					painter.drawText(ax + 110, gyoff + ay + fontm.height() * 0 + 10, 'Mod: %s' % b['mod'])
+					painter.drawText(ax + 110, gyoff + ay + fontm.height() * 1 + 10, 'Desc: %s' % b['desc'])
+					painter.drawText(ax + 110, gyoff + ay + fontm.height() * 2 + 10, 'Map: %s' % b['map'])
+					painter.drawText(ax + 110, gyoff + ay + fontm.height() * 3 + 10, 'Players/Specs: %s/%s' % (len(b['players']) - b['specs'], b['specs']))
 					
+					####################################
+					
+					cntSpecs = b['specs'] 
+					cntInGame = 0
+					for p in b['players']:
+						if p in self.players:
+							if self.players[p]['inGame']:
+								cntInGame = cntInGame + 1
+					cntIdle = len(b['players']) - cntInGame - cntSpecs
+					
+					maxp = b['maxPlayers']
+					
+					perRow = 20
+					
+					c_InGame = QtGui.QColor(0x00, 0xff, 0x00)
+					c_Spec = QtGui.QColor(0x00, 0xff, 0xff)
+					c_Idle = QtGui.QColor(0x00, 0x00, 0x00)
+					c_Empty = QtGui.QColor(0x99, 0x99, 0x99)
+					
+					i = 0
+					while i < maxp:
+						row = int(i / perRow)
+						col = i - (row * perRow)
+						__y = row * 10 + ay + fontm.height() * 4 + 10 + gyoff
+						__x = col * 10 + ax + 110
+						
+						if cntInGame > 0:
+							cntInGame = cntInGame - 1
+							c = c_InGame
+						elif cntSpecs > 0:
+							cntSpecs = cntSpecs - 1
+							c = c_Spec
+						elif cntIdle > 0:
+							cntIdle = cntIdle - 1
+							c = c_Idle
+						else:
+							c = c_Empty
+							
+						painter.fillRect(__x, __y, 7, 7, c)
+						
+						i = i + 1
+					#####################
+					#####################
 				bc = bc + 1
 			return
 		return
