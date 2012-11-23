@@ -136,16 +136,18 @@ class MainWindow(QtGui.QWidget):
 		course that is the least efficent way to do it, but now I know.
 	'''
 	def resizeEvent(self, event):
+		mnuWidth = 150
+	
 		h = event.size().height()
 		w = event.size().width()
-		self.wTreeView.resize(w * 0.25, h)
+		self.wTreeView.resize(mnuWidth, h)
 		self.wTreeView.move(0, 0)
 		if self.formalized:
 			for plug in gPlugins:
 				widget = plug.wParent
-				widget.move(w * 0.25, 0)
-				widget.resize(w * 0.75, h)
-				plug.resize(w * 0.75, h)
+				widget.move(mnuWidth, 0)
+				widget.resize(w - mnuWidth, h)
+				plug.resize(w - mnuWidth, h)
 
 	'''
 		Hide the widget currently being shown, and show the
